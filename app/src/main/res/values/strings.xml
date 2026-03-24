@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">Vibe Scout</string>
+
+    <string name="worker_name">VibeScout Worker</string>
+    <string name="worker_tag">worker_tag</string>
+
+    <string name="worker_cancel_notification">Stop</string>
+    <string name="worker_running">Service running</string>
+    <string name="worker_stopped_alert_notification_title">Service Stopped</string>
+
+</resources>
