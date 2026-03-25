@@ -1,6 +1,7 @@
 package ooo.simone.vibescout.core.workers
 
 import android.content.Context
+import android.os.Build
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.map
 import androidx.work.ExistingWorkPolicy
@@ -29,11 +30,14 @@ fun getWorkerStatus(ctx: Context): LiveData<WorkInfo?> {
 
 
 private fun createWorker(ctx: Context, tag: String) {
-    val oneTimeRequest: OneTimeWorkRequest =
-        OneTimeWorkRequestBuilder<VibeScoutWorker>()
-            .addTag(tag)
-            .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
-            .build()
+    val builder = OneTimeWorkRequestBuilder<VibeScoutWorker>()
+        .addTag(tag)
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        builder.setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+    }
+
+    val oneTimeRequest: OneTimeWorkRequest = builder.build()
 
     WorkManager.getInstance(ctx).enqueueUniqueWork(
         tag,

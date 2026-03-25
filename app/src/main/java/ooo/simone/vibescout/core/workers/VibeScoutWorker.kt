@@ -3,6 +3,7 @@ package ooo.simone.vibescout.core.workers
 import android.content.Context
 import android.content.pm.ServiceInfo
 import android.net.wifi.WifiManager
+import android.os.Build
 import androidx.work.CoroutineWorker
 import androidx.work.ForegroundInfo
 import androidx.work.WorkManager
@@ -136,13 +137,18 @@ class VibeScoutWorker(context: Context, parameters: WorkerParameters) :
             WorkManager.getInstance(applicationContext).createCancelPendingIntent(id)
         )
 
-        return ForegroundInfo(workerNotifId, notification.build(), ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE)
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            ForegroundInfo(workerNotifId, notification.build(), ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE)
+        } else {
+            ForegroundInfo(workerNotifId, notification.build())
+        }
     }
 
     private fun acquireWifiLock() {
         if (!this::wifiLock.isInitialized) {
             val wifiManager: WifiManager =
                 applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+            @Suppress("DEPRECATION")
             wifiLock = wifiManager.createWifiLock(WifiManager.WIFI_MODE_FULL_HIGH_PERF, tag)
         }
 

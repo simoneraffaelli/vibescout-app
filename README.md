@@ -23,7 +23,7 @@ VibeScout is an Android app that continuously listens to ambient audio, recogniz
 | Networking | Retrofit 3 + OkHttp + Gson |
 | Permissions | XXPermissions |
 | Logging | Timber |
-| Min SDK | 35 (Android 15) |
+| Min SDK | 28 (Android 9.0) |
 | Target SDK | 36 |
 
 ### High-Level Data Flow
@@ -302,8 +302,8 @@ Configured via `ndk.abiFilters` in `app/build.gradle.kts`.
 
 The recognition loop runs as a `CoroutineWorker` managed by WorkManager:
 
-- **Execution mode**: One-time expedited work request with `OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST` fallback
-- **Foreground type**: `MICROPHONE` + `MEDIA_PROCESSING`
+- **Execution mode**: One-time work request, expedited on API 31+ with `OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST` fallback
+- **Foreground type**: `MICROPHONE` (API 29+); plain foreground service on older versions
 - **Wi-Fi lock**: Acquired during each cycle to prevent Wi-Fi sleep
 - **Notification**: Persistent foreground notification with a "Stop" action button
 
@@ -317,6 +317,23 @@ The recognition loop runs as a `CoroutineWorker` managed by WorkManager:
 | General exception | Logs error, continues loop |
 
 When the worker is stopped (by user or system), it posts a "Service Stopped" notification and releases the Wi-Fi lock.
+
+---
+
+## API Level Compatibility
+
+The app targets API 36 but supports devices back to **API 28 (Android 9.0)**. Several features are version-gated:
+
+| Feature | Available From | Behavior on Older APIs |
+|---|---|---|
+| Dynamic color theming | API 31 | Falls back to static Material 3 colors |
+| Expedited WorkManager | API 31 | Runs as standard (non-expedited) work |
+| Foreground service type (microphone) | API 29 | Runs as plain foreground service |
+| `FOREGROUND_SERVICE_IMMEDIATE` notification | API 31 | Omitted; default behavior used |
+| `PendingIntent.FLAG_IMMUTABLE` | API 23 | Uses `FLAG_UPDATE_CURRENT` only on older |
+| `POST_NOTIFICATIONS` permission | API 33 | Not needed; notifications allowed by default |
+| Foreground service type permissions | API 34 | Not needed; base `FOREGROUND_SERVICE` suffices |
+| `ConnectivityManager.activeNetwork` | API 29 | Falls back to iterating `allNetworks` |
 
 ---
 

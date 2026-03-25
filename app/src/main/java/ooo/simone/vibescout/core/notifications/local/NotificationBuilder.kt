@@ -6,6 +6,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import androidx.annotation.DrawableRes
 import androidx.core.app.NotificationCompat
 import ooo.simone.vibescout.MainActivity
@@ -56,15 +57,20 @@ fun buildWorkerServiceNotification(
     createNotificationChannel(ctx)
 
     // Create the notification itself
-    return NotificationCompat.Builder(ctx, notifChannelId)
+    val builder = NotificationCompat.Builder(ctx, notifChannelId)
         .setContentTitle(ctx.getString(R.string.worker_name))
         .setContentText(text)
         .setOngoing(true)
         .setContentIntent(createPendingIntent(ctx, workerNotifId))
-        .setForegroundServiceBehavior(Notification. FOREGROUND_SERVICE_IMMEDIATE)
         .setSmallIcon(R.drawable.baseline_hearing_24)
         .addAction(R.drawable.outline_crisis_alert_24, ctx.resources.getString(R.string.worker_cancel_notification), cancelIntent)
         .setOnlyAlertOnce(true)
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        builder.setForegroundServiceBehavior(Notification.FOREGROUND_SERVICE_IMMEDIATE)
+    }
+
+    return builder
 }
 
 
@@ -92,5 +98,10 @@ private fun createPendingIntent(context: Context, notificationId: Int): PendingI
     val intent = Intent(context, MainActivity::class.java).apply {
         flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
     }
-    return PendingIntent.getActivity(context, notificationId, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+    val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+    } else {
+        PendingIntent.FLAG_UPDATE_CURRENT
+    }
+    return PendingIntent.getActivity(context, notificationId, intent, flags)
 }
