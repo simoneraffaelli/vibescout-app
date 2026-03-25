@@ -45,19 +45,20 @@ VibeScout is an Android app that continuously listens to ambient audio, recogniz
    │                                         │
    │ 1. Check permissions & network          │
    │ 2. Acquire Wi-Fi lock                   │
-   │ 3. Record 12s audio ──→ AudioRecorder   │
+   │ 3. Send heartbeat ──→ POST /api/heartbeat│
+   │ 4. Record 12s audio ──→ AudioRecorder   │
    │                              ↓          │
-   │ 4. Fingerprint + Recognize via JNI      │
+   │ 5. Fingerprint + Recognize via JNI      │
    │         SongRecFingerprint (Rust)       │
    │              ↓ (Shazam JSON)            │
-   │ 5. Parse match ──→ MatchChecker         │
+   │ 6. Parse match ──→ MatchChecker         │
    │              ↓                          │
-   │ 6. POST to API ──→ VibescoutApiClient   │
+   │ 7. POST to API ──→ VibescoutApiClient   │
    │         POST /api/tracks                │
    │              ↓                          │
-   │ 7. Release Wi-Fi lock                   │
-   │ 8. Sleep 120s (or 60s if no network)    │
-   │ 9. Repeat                               │
+   │ 8. Release Wi-Fi lock                   │
+   │ 9. Sleep 120s (or 60s if no network)    │
+   │10. Repeat                               │
    └─────────────────────────────────────────┘
              ↓
     Foreground Notification
@@ -80,13 +81,14 @@ app/src/main/java/ooo/simone/vibescout/
 │   │   ├── AudioRecognizer.kt       # Wraps SongRecFingerprint for recognition
 │   │   └── MatchChecker.kt          # Parses Shazam JSON response into Track
 │   ├── api/
-│   │   ├── VibescoutApiClient.kt    # Retrofit interface (POST /api/tracks)
+│   │   ├── VibescoutApiClient.kt    # Retrofit interface (POST /api/tracks, POST /api/heartbeat)
 │   │   ├── ServiceGenerator.kt      # Retrofit/OkHttp factory
 │   │   ├── ApiClient.kt             # Singleton accessor
 │   │   ├── ApiManager.kt            # Convenience wrapper with auth header
 │   │   └── models/
 │   │       ├── TrackRequest.kt      # { title, artist }
-│   │       └── TrackResponse.kt     # { id, title, artist, spottedAt, deviceId }
+│   │       ├── TrackResponse.kt     # { id, title, artist, spottedAt, deviceId }
+│   │       └── HeartbeatResponse.kt # { ok }
 │   ├── workers/
 │   │   ├── VibeScoutWorker.kt       # Core background loop (record → recognize → report)
 │   │   └── WorkerUtils.kt           # Start, stop, observe worker status
@@ -116,6 +118,8 @@ app/src/main/java/ooo/simone/vibescout/
 app/src/main/jniLibs/
 ├── arm64-v8a/
 │   └── libsongrec_fingerprint.so    # ARM 64-bit (most modern devices)
+├── armeabi-v7a/
+│   └── libsongrec_fingerprint.so    # ARM 32-bit (legacy devices)
 └── x86_64/
     └── libsongrec_fingerprint.so    # Intel 64-bit (emulators)
 ```
@@ -158,7 +162,16 @@ The captured `FloatArray` is passed to `SongRecFingerprint.recognizeSong()` via 
 - Extracts `title` and `artist` (subtitle) from the `track` object
 - Returns a `Track` object, or `null` if no match
 
-### 4. API Reporting
+### 4. Heartbeat
+
+Before each recognition cycle, the worker sends a heartbeat to the backend to signal the device is alive:
+
+```
+POST /api/heartbeat
+Authorization: Bearer srk_<your-api-key>
+```
+
+### 5. API Reporting
 
 When a track is matched, `ApiManager` sends it to the VibeScout Web backend:
 
@@ -170,7 +183,7 @@ Content-Type: application/json
 { "title": "Song Title", "artist": "Artist Name" }
 ```
 
-### 5. Loop
+### 6. Loop
 
 The worker sleeps for **120 seconds**, then repeats. If the network is unavailable, the delay is reduced to **60 seconds** to retry sooner.
 
@@ -255,7 +268,8 @@ These are defined in `core/Const.kt`.
 
 The app ships native libraries for:
 
-- **arm64-v8a** — modern phones and tablets
+- **arm64-v8a** — modern phones and tablets (ARM 64-bit)
+- **armeabi-v7a** — legacy devices (ARM 32-bit)
 - **x86_64** — emulators and Intel-based devices
 
 Configured via `ndk.abiFilters` in `app/build.gradle.kts`.
@@ -272,9 +286,12 @@ Configured via `ndk.abiFilters` in `app/build.gradle.kts`.
 | AndroidX Activity Compose | 1.13.0 | Compose integration with Activities |
 | AndroidX AppCompat | 1.7.1 | Backward compatibility |
 | AndroidX Work Runtime KTX | 2.11.1 | Background task scheduling (WorkManager) |
+| AndroidX Work Multiprocess | 2.11.1 | Multi-process WorkManager support |
+| Compose Material Icons Extended | (via BOM) | Extended Material icon set |
+| Compose Runtime LiveData | (via BOM) | LiveData integration for Compose |
 | Retrofit | 3.0.0 | Type-safe HTTP client |
 | Retrofit Gson Converter | 3.0.0 | JSON serialization |
-| OkHttp Logging Interceptor | 5.0.0-alpha.14 | HTTP request/response logging |
+| OkHttp Logging Interceptor | 5.3.2 | HTTP request/response logging |
 | Timber | 5.0.1 | Logging |
 | XXPermissions | 28.0 | Runtime permission requests |
 | DeviceCompat | 2.3 | Device compatibility checks |
