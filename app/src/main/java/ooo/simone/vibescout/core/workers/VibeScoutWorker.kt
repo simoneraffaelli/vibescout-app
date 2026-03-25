@@ -136,7 +136,7 @@ class VibeScoutWorker(context: Context, parameters: WorkerParameters) :
             WorkManager.getInstance(applicationContext).createCancelPendingIntent(id)
         )
 
-        return ForegroundInfo(workerNotifId, notification.build(), ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROCESSING)
+        return ForegroundInfo(workerNotifId, notification.build(), ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE)
     }
 
     private fun acquireWifiLock() {
