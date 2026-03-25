@@ -6,6 +6,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- API 34+ foreground service type permissions -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROCESSING" />
 
@@ -33,7 +34,8 @@
         <service
             android:name="androidx.work.impl.foreground.SystemForegroundService"
             android:exported="false"
-            android:foregroundServiceType="microphone|mediaProcessing" />
+            android:foregroundServiceType="microphone|mediaProcessing"
+            tools:targetApi="upside_down_cake" />
     </application>
 
 </manifest>
