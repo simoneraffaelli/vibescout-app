@@ -12,6 +12,7 @@ import com.hjq.permissions.permission.PermissionLists
 import kotlinx.coroutines.delay
 import ooo.simone.vibescout.R
 import ooo.simone.vibescout.core.api.ApiManager
+import ooo.simone.vibescout.core.api.ApiManager.heartbeat
 import ooo.simone.vibescout.core.api.models.TrackRequest
 import ooo.simone.vibescout.core.audio.AudioRecorder
 import ooo.simone.vibescout.core.audioFileDuration
@@ -62,6 +63,7 @@ class VibeScoutWorker(context: Context, parameters: WorkerParameters) :
                 runCatching {
                     if (!isNetworkOnline(applicationContext)) throw NoNetworkException()
                     workerDelay = workerDelayConst
+                    performHeartbeat()
                     doStuff()
                 }.onFailure {
                     w(it)
@@ -83,6 +85,11 @@ class VibeScoutWorker(context: Context, parameters: WorkerParameters) :
         return Result.success()
     }
 
+    private suspend fun performHeartbeat(): Boolean {
+        val hb = heartbeat(authKey!!)
+        return hb.isSuccessful
+    }
+
     private fun permissionGranted(): Boolean {
         return XXPermissions.isGrantedPermissions(
             applicationContext,
@@ -98,9 +105,9 @@ class VibeScoutWorker(context: Context, parameters: WorkerParameters) :
         if (matched) sendTrackToApi(track)
     }
 
-    private suspend fun sendTrackToApi(track: Track) {
-        val asd = ApiManager.tracks(authKey!!, body = TrackRequest(track.title, track.artist))
-        asd.isSuccessful
+    private suspend fun sendTrackToApi(track: Track): Boolean {
+        val resp = ApiManager.tracks(authKey!!, body = TrackRequest(track.title, track.artist))
+        return resp.isSuccessful
     }
 
     private fun checkIfMatched(json: String): Track? {
