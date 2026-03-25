@@ -1,6 +1,6 @@
 package ooo.simone.vibescout.core
 
-const val workerDelayConst = 5000L
+const val workerDelayConst = 120000L
 const val notifChannelId = "12345"
 const val workerNotifId = 1
 const val stoppedWorkerNotifId = 2

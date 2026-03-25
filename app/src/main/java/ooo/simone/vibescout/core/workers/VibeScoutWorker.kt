@@ -38,7 +38,7 @@ class VibeScoutWorker(context: Context, parameters: WorkerParameters) :
     CoroutineWorker(context, parameters) {
     private val tag by lazy { this::class.java.simpleName }
     private lateinit var wifiLock: WifiManager.WifiLock
-    private var workerDelay = 120000L
+    private var workerDelay = workerDelayConst
 
 
     private val authKey: String?
